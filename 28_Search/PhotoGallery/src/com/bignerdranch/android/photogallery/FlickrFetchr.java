@@ -21,7 +21,8 @@ public class FlickrFetchr {
     public static final String TAG = "PhotoFetcher";
 
     public static final String PREF_SEARCH_QUERY = "searchQuery";
-
+    public static final String PREF_LAST_RESULT_ID = "lastResultId";
+    
     private static final String ENDPOINT = "https://api.flickr.com/services/rest/";
     private static final String API_KEY = "504b8ef9e68a0f1cd4346cd6576cf132";
     private static final String METHOD_GET_RECENT = "flickr.photos.getRecent";

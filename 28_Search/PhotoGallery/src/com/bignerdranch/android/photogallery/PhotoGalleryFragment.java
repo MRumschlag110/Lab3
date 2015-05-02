@@ -2,12 +2,14 @@ package com.bignerdranch.android.photogallery;
 
 import java.util.ArrayList;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -15,6 +17,7 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -40,6 +43,7 @@ public class PhotoGalleryFragment extends Fragment {
 
         updateItems();
 
+        
         mThumbnailThread = new ThumbnailDownloader(new Handler());
         mThumbnailThread.start();
     }
@@ -92,7 +96,8 @@ public class PhotoGalleryFragment extends Fragment {
         }
     }
 
-    @Override
+    @SuppressLint("NewApi")
+	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_item_search:
@@ -105,8 +110,23 @@ public class PhotoGalleryFragment extends Fragment {
                     .commit();
                 updateItems();
                 return true;
+            case R.id.menu_item_toggle_polling:
+            	try{
+            		boolean shouldStartAlarm = !PollService.isServiceAlarmOn(getActivity());
+            	PollService.setServiceAlarm(getActivity(), shouldStartAlarm);
+            	
+            	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+            		getActivity().invalidateOptionsMenu();
+            	}
+            	catch(Exception e){
+            		Log.e("exception:", e.getMessage());
+            	}
+            	
+            		
+            	return true;
             default:
                 return super.onOptionsItemSelected(item);
+            	
         }
     }
 
@@ -139,7 +159,17 @@ public class PhotoGalleryFragment extends Fragment {
         @Override
         protected void onPostExecute(ArrayList<GalleryItem> items) {
             mItems = items;
+            
+            if (items.size() > 0) {
+                String resultId = items.get(0).getId();
+                PreferenceManager.getDefaultSharedPreferences(getActivity())
+                    .edit()
+                    .putString(FlickrFetchr.PREF_LAST_RESULT_ID, resultId)
+                    .commit();
+            }
             setupAdapter();
+            
+            
         }
     }
     
@@ -163,5 +193,16 @@ public class PhotoGalleryFragment extends Fragment {
             
             return convertView;
         }
+    }
+    @Override
+    public void onPrepareOptionsMenu(Menu menu){
+    	super.onPrepareOptionsMenu(menu);
+    	
+    	MenuItem toggleItem = menu.findItem(R.id.menu_item_toggle_polling);
+    	if (PollService.isServiceAlarmOn(getActivity())){
+    		toggleItem.setTitle(R.string.stop_polling);
+    	} else {
+    		toggleItem.setTitle(R.string.start_polling);
+    	} 
     }
 }
